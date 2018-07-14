@@ -30,10 +30,14 @@ point = ['AF3_THETA','AF3_ALPHA','AF3_LOW_BETA','AF3_HIGH_BETA',
 def prolong(array,window,slide):
     """
     配列から窓をスライドさせてバッチに変換します。
+    波形の最後に終了を示すフラグも添付します。
     """
     dataset = []
+    end = [0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
-        dataset.append(array[i:i+window])
+        pick = copy(array[i:i+window])
+        pick.append(copy(end))  #終了フラグの結合
+        dataset.append(pick)
     return dataset
 
 
@@ -121,4 +125,4 @@ if __name__ == '__main__':
     #x,y = data.get_bp(batch_size = 50)
     #print(x.shape,y.shape)
     x,y,_,_ = data.get()
-    print(y[10])
+    print(np.array(x).shape)
