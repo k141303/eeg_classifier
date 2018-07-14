@@ -25,7 +25,7 @@ from get_eeg import data
 # 損失関数の計算
 def forward(x, y, model):
     t = model.predict(x)
-    loss = F.softmax_cross_entropy(t[(len(t)-1)], y[(len(t)-1)])
+    loss = F.softmax_cross_entropy(t, y)
     return loss
 
 def main():
