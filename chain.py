@@ -18,10 +18,12 @@ class MyChain(Chain):
 
     def predict(self, x):
         self.reset()
-        h1 = F.dropout(F.relu(self.l1(x)))
-        h2 = F.dropout(self.l2(h1))
-        h3 = F.dropout(self.l3(h2))
-        return  F.softmax(self.l4(h3))
+        for idx,i in enumerate(x):
+            h1 = F.dropout(F.relu(self.l1(x)))
+            h2 = F.dropout(self.l2(h1))
+            h3 = F.dropout(self.l3(h2))
+            out = F.softmax(self.l4(h3))
+        return  out
 
     def reset(self):
         self.l2.reset_state()
