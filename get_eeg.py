@@ -120,4 +120,5 @@ if __name__ == '__main__':
                 eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
     #x,y = data.get_bp(batch_size = 50)
     #print(x.shape,y.shape)
-    data.get()
+    x,y,_,_ = data.get()
+    print(y[10])
