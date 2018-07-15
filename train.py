@@ -91,7 +91,7 @@ def main():
 
     #テストデータをNN用に変換
     test_x = [Variable(xp.array(i,dtype=np.float32)) for i in x]
-    test_y = np.array(y, dtype=np.int32)
+    test_y = xp.array(y, dtype=np.int32)
 
     #NN用に変換
     #x = Variable(xp.array(x, dtype=np.float32))
