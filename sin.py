@@ -88,7 +88,8 @@ def train(max_epoch, train_size, valid_size):
     x_train = [Variable(np.array(i,dtype=np.float32)) for i in x_train]
     x_test = [Variable(np.array(i,dtype=np.float32)) for i in x_test]
 
-    optimizer = optimizers.RMSprop(lr=0.03)
+    #optimizer = optimizers.RMSprop(lr=0.03)
+    optimizer = optimizers.Adam()
     optimizer.setup(model)
 
     early_stopping = 20
