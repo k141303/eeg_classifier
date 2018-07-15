@@ -21,8 +21,8 @@ class MyChain(Chain):
 
     def predict(self, x):
         _,_,h = self.l1(None,None,x)
-        #h = F.vstack(map(lambda y: y[-1], ys))
-        h = self.v([_h[-1].data for _h in h])
+        h = F.vstack(map(lambda y: y[-1], h))
+        #h = self.v([_h[-1].data for _h in h])
         h2 = F.relu(self.l2(h))
         out = F.relu(self.l3(h2))
         return  F.sigmoid(out)
