@@ -37,7 +37,7 @@ def prolong(array,window,slide):
     end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
-        #pick.append(copy(end))  #終了フラグの結合
+        pick.append(copy(end))  #終了フラグの結合
         dataset.append(pick)
     return dataset
 
