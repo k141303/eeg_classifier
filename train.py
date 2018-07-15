@@ -84,8 +84,8 @@ def main():
     x,y,_,_ = eeg.get()
 
     #NN用に変換
-    x = Variable(xp.array(x, dtype=np.float32))
-    y = Variable(xp.array(y, dtype=np.int32))
+    #x = Variable(xp.array(x, dtype=np.float32))
+    #y = Variable(xp.array(y, dtype=np.int32))
 
     # パラメータの学習を繰り返す
     log_loss = []
@@ -93,20 +93,27 @@ def main():
     for e in range(args.epoch):
 
         #データのシャッフル
+        """
         p = np.random.permutation(len(x))
         x = x[p]
         y = y[p]
+        """
+        zipped = list(zip(x, y))
+        np.random.shuffle(zipped)
+        x, y = zip(*zipped)
+
+        np_y = Variable(xp.array(y, dtype=np.int32))
+        np_x = [Variable(xp.array(i,dtype=np.float32)) for i in x]
 
         #バッジごとに処理
         sum_loss = []
-        for x_batch,y_batch in zip(x,y):
+        for num,i in enumerate(range(0, len(np_x)-1, args.batchsize)):  #バッジに分割して処理
+            x_batch = np_x[i:i + args.batchsize]
+            y_batch = np_y[i:i + args.batchsize]
             loss = forward(x_batch, y_batch, model)
-            sum_loss.append(loss.data/len(x))
+            sum_loss.append(loss.data/args.batchsize)
             optimizer.update(forward, x_batch, y_batch, model)
-            #loss.unchain_backward()
-
-        #LSTMをリセット
-        model.reset()
+            loss.unchain_backward()
 
         print(e+1,sum(sum_loss)/len(sum_loss))
 

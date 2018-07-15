@@ -6,6 +6,7 @@ import pandas as pd
 import csv
 import numpy as np
 from collections import defaultdict
+from chainer import Chain, Variable
 
 #テスト用
 import random
@@ -33,7 +34,7 @@ def prolong(array,window,slide):
     波形の最後に終了を示すフラグも添付します。
     """
     dataset = []
-    end = [0 for i in range(len(array[0]))] #終了フラグ
+    end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
         pick.append(copy(end))  #終了フラグの結合
@@ -81,7 +82,7 @@ class data:
         remove : 前後からこの範囲をノイズとしてカットします
         """
         #脳波部の抽出
-        signal = [list(map(int, i[2:16])) for i in self.number_eeg]
+        signal = [list(map(float, i[2:16])) for i in self.number_eeg]
 
         #キーストロークの抽出
         key = [int(i[19]) for i in self.number_eeg]
@@ -108,7 +109,7 @@ class data:
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [[0 if key == '12' else 1 for i in x[0]] for j in x]
+                y = [0 if key == '12' else 1 for i in x]
                 if idx <= 2:
                     train_x.extend(x)
                     train_y.extend(y)
@@ -126,3 +127,6 @@ if __name__ == '__main__':
     #print(x.shape,y.shape)
     x,y,_,_ = data.get()
     print(np.array(x).shape)
+    print(np.array(y).shape)
+    #print(y)
+    print(x[0][0])
