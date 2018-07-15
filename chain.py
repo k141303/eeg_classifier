@@ -7,10 +7,10 @@ import chainer.links as L
 import chainer.functions as F
 
 class MyChain(Chain):
-    def __init__(self,in_units,hd_units,out_units):
+    def __init__(self,in_units,hd_units,out_units,dropout = 0.5):
         super(MyChain, self).__init__(
             l1 = L.NStepLSTM(n_layers=2, in_size=in_units,
-                      out_size=hd_units, dropout=0.5),
+                      out_size=hd_units, dropout=dropout),
             l2 = L.Linear(hd_units,hd_units),
             l3 = L.Linear(hd_units,out_units),
         )

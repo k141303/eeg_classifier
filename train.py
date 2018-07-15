@@ -26,7 +26,7 @@ from get_eeg import data
 def forward(x, y, model):
     t = model.predict(x)
     loss = F.softmax_cross_entropy(t, y)
-    return loss
+    return loss, F.accuracy(y, t)
 
 def main():
     # 実行時変数
@@ -107,15 +107,17 @@ def main():
 
         #バッジごとに処理
         sum_loss = []
+        sum_act = []
         for num,i in enumerate(range(0, len(np_x)-1, args.batchsize)):  #バッジに分割して処理
             x_batch = np_x[i:i + args.batchsize]
             y_batch = np_y[i:i + args.batchsize]
-            loss = forward(x_batch, y_batch, model)
+            loss,act = forward(x_batch, y_batch, model)
             sum_loss.append(loss.data/args.batchsize)
+            sum_act.append(act)
             optimizer.update(forward, x_batch, y_batch, model)
             #loss.unchain_backward()
 
-        print(e+1,sum(sum_loss)/len(sum_loss))
+        print(e+1,sum(sum_loss)/len(sum_loss),sum(sum_act)/len(sum_act))
 
         #誤差出力
         log_loss.append(sum(sum_loss)/len(sum_loss))
