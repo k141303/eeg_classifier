@@ -128,8 +128,13 @@ def main():
         print(e+1,sum(sum_loss)/len(sum_loss))
 
         #テスト
-        test_t = model.predict(test_x)
-        print(F.accuracy(test_t,test_y))
+        act = []
+        for num,i in enumerate(range(0, len(test_x)-1, args.batchsize)):  #バッジに分割して処理
+            test_x_batch = test_x[i:i + args.batchsize]
+            test_y_batch = test_y[i:i + args.batchsize]
+            test_t = model.predict(test_x_batch)
+            act.append(F.accuracy(test_t,test_y_batch).data)
+        print(e+1,sum(act)/len(act))
 
         #誤差出力
         log_loss.append(sum(sum_loss)/len(sum_loss))
