@@ -113,7 +113,7 @@ def main():
             loss = forward(x_batch, y_batch, model)
             sum_loss.append(loss.data/args.batchsize)
             optimizer.update(forward, x_batch, y_batch, model)
-            loss.unchain_backward()
+            #loss.unchain_backward()
 
         print(e+1,sum(sum_loss)/len(sum_loss))
 
