@@ -22,6 +22,12 @@ from tqdm import tqdm
 # データ取得
 from get_eeg import data
 
+# 損失関数の計算
+def forward(x, y, model):
+    t = model.predict(x)
+    loss = F.sigmoid_cross_entropy(t, y)
+    return loss
+
 def main():
     # 実行時変数
     parser = argparse.ArgumentParser(description='NNEEG')
@@ -114,25 +120,21 @@ def main():
         for num,i in enumerate(range(0, len(np_x)-1, args.batchsize)):  #バッジに分割して処理
             x_batch = np_x[i:i + args.batchsize]
             y_batch = np_y[i:i + args.batchsize]
-            loss = model(x_batch, y_batch)
+            loss = forward(x_batch, y_batch, model)
             sum_loss.append(loss.data/args.batchsize)
-            loss.backward()
-            optimizer.update()
+            optimizer.update(forward, x_batch, y_batch, model)
             #loss.unchain_backward()
 
         print(e+1,sum(sum_loss)/len(sum_loss))
 
         #テスト
         act = []
-        test_model = model.copy()
         for num,i in enumerate(range(0, len(test_x)-1, args.batchsize)):  #バッジに分割して処理
             test_x_batch = test_x[i:i + args.batchsize]
             test_y_batch = test_y[i:i + args.batchsize]
-            test_t = test_model.predict(test_x_batch)
+            test_t = model.predict(test_x_batch)
             act.append(F.accuracy(test_t,test_y_batch).data)
-            test_t = None
-        print(sum(act)/len(act))
-
+        print(e+1,sum(act)/len(act))
 
         #誤差出力
         log_loss.append(sum(sum_loss)/len(sum_loss))

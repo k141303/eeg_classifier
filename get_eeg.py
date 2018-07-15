@@ -37,7 +37,7 @@ def prolong(array,window,slide):
     end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
-        pick.append(copy(end))  #終了フラグの結合
+        #pick.append(copy(end))  #終了フラグの結合
         dataset.append(pick)
     return dataset
 
@@ -109,7 +109,7 @@ class data:
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [0 if key == '12' else 1 for i in x]
+                y = [[1,0] if key == '12' else [0,1] for i in x]
                 if idx <= 2:
                     train_x.extend(x)
                     train_y.extend(y)
