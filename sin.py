@@ -6,6 +6,7 @@ from chainer import Link, Chain, ChainList
 import chainer.functions as F
 import chainer.links as L
 from chainer.training import extensions
+from get_eeg import data
 
 def dataset(total_size, test_size):
     x, y = [], []
@@ -31,6 +32,7 @@ def dataset(total_size, test_size):
     return x_train, x_test, y_train, y_test
 
 
+
 def v(x):
     return Variable(np.asarray(x, dtype=np.float32))
 
@@ -42,8 +44,8 @@ def vi(x):
 class RNN(Chain):
     def __init__(self):
         super(RNN, self).__init__()
-        input_dim = 1
-        hidden_dim = 5
+        input_dim = 14
+        hidden_dim = 100
         output_dim = 1
 
         with self.init_scope():
@@ -73,7 +75,18 @@ def train(max_epoch, train_size, valid_size):
     model = RNN()
 
     # train に1000サンプル、 testに1000サンプル使用
-    x_train, x_test, y_train, y_test = dataset(train_size + valid_size, train_size)
+    #x_train, x_test, y_train, y_test = dataset(train_size + valid_size, train_size)
+
+    # 学習用データの取得
+    eeg = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
+                eeg_bp = 'pilot_project/ishida/math_2018.07.10_16.24.29.bp.csv',
+                eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
+
+    #eegデータを取得
+    x_train,y_train,x_test,y_test = eeg.get(window = 256,slide = 10)
+    y_train,y_test = vi(y_train),vi(y_test)
+    x_train = [Variable(np.array(i,dtype=np.float32)) for i in x_train]
+    x_test = [Variable(np.array(i,dtype=np.float32)) for i in x_test]
 
     optimizer = optimizers.RMSprop(lr=0.03)
     optimizer.setup(model)

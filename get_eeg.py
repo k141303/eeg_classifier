@@ -109,7 +109,7 @@ class data:
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [[1,0] if key == '12' else [0,1] for i in x]
+                y = [np.array([0]) if key == '12' else np.array([1]) for i in x]
                 if idx <= 2:
                     train_x.extend(x)
                     train_y.extend(y)
