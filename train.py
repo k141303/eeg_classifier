@@ -26,7 +26,7 @@ from get_eeg import data
 def forward(x, y, model):
     t = model.predict(x)
     loss = F.softmax_cross_entropy(t, y)
-    return loss, F.accuracy(y, t)
+    return loss
 
 def main():
     # 実行時変数
@@ -39,12 +39,18 @@ def main():
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--unit', '-u', type=int, default=70,
                         help='Number of units')
+    parser.add_argument('--window', '-w', type=int, default=128,
+                        help='Number of window')
+    parser.add_argument('--slide', '-s', type=int, default=25,
+                        help='Number of slide width')
     args = parser.parse_args()
 
     print('GPU: {}'.format(args.gpu))
     print('# unit: {}'.format(args.unit))
     print('# Minibatch-size: {}'.format(args.batchsize))
     print('# epoch: {}'.format(args.epoch))
+    print('# window-size: {}'.format(args.window))
+    print('# slide-width: {}'.format(args.slide))
 
     #ディレクトリ作成
     if not os.path.isdir('model/'):
@@ -53,7 +59,7 @@ def main():
         os.makedirs('log/')
 
     # NNモデルを宣言
-    model = MyChain(14,args.unit,3)
+    model = MyChain(14,args.unit,2)
 
     #GPU設定
     if args.gpu != -1:
@@ -81,7 +87,11 @@ def main():
     optimizer.setup(model)
 
     #eegデータを取得
-    x,y,_,_ = eeg.get()
+    x,y,test_x,test_y = eeg.get(window = args.window,slide = args.slide)
+
+    #テストデータをNN用に変換
+    test_x = [Variable(xp.array(i,dtype=np.float32)) for i in x]
+    test_y = np.array(y, dtype=np.int32)
 
     #NN用に変換
     #x = Variable(xp.array(x, dtype=np.float32))
@@ -107,17 +117,19 @@ def main():
 
         #バッジごとに処理
         sum_loss = []
-        sum_act = []
         for num,i in enumerate(range(0, len(np_x)-1, args.batchsize)):  #バッジに分割して処理
             x_batch = np_x[i:i + args.batchsize]
             y_batch = np_y[i:i + args.batchsize]
-            loss,act = forward(x_batch, y_batch, model)
+            loss = forward(x_batch, y_batch, model)
             sum_loss.append(loss.data/args.batchsize)
-            sum_act.append(act)
             optimizer.update(forward, x_batch, y_batch, model)
             #loss.unchain_backward()
 
-        print(e+1,sum(sum_loss)/len(sum_loss),sum(sum_act)/len(sum_act))
+        print(e+1,sum(sum_loss)/len(sum_loss))
+
+        #テスト
+        test_t = model.predict(test_x)
+        print(F.accuracy(test_t,test_y))
 
         #誤差出力
         log_loss.append(sum(sum_loss)/len(sum_loss))

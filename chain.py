@@ -19,5 +19,5 @@ class MyChain(Chain):
         _,_,ys = self.l1(None,None,x)
         h = F.vstack(map(lambda y: y[-1], ys))
         h2 = F.relu(self.l2(h))
-        out = F.softmax(self.l3(h2))
-        return  out
+        out = F.relu(self.l3(h2))
+        return  F.softmax(out)
