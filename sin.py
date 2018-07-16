@@ -7,7 +7,8 @@ import chainer.functions as F
 import chainer.links as L
 from chainer.training import extensions
 from get_eeg import data
-
+import argparse
+"""
 def dataset(total_size, test_size):
     x, y = [], []
     for i in range(total_size):
@@ -30,8 +31,30 @@ def dataset(total_size, test_size):
     x_test = x[-test_size:]
     y_test = vi(y[-test_size:])
     return x_train, x_test, y_train, y_test
+"""
 
+# 実行時変数
+parser = argparse.ArgumentParser(description='NNEEG')
+parser.add_argument('--batchsize', '-b', type=int, default=50,
+                    help='Number of images in each mini-batch')
+parser.add_argument('--epoch', '-e', type=int, default=20,
+                    help='Number of sweeps over the dataset to train')
+parser.add_argument('--gpu', '-g', type=int, default=-1,
+                    help='GPU ID (negative value indicates CPU)')
+parser.add_argument('--unit', '-u', type=int, default=128,
+                    help='Number of units')
+parser.add_argument('--window', '-w', type=int, default=128,
+                    help='Number of window')
+parser.add_argument('--slide', '-s', type=int, default=25,
+                    help='Number of slide width')
+args = parser.parse_args()
 
+print('GPU: {}'.format(args.gpu))
+print('# unit: {}'.format(args.unit))
+print('# Minibatch-size: {}'.format(args.batchsize))
+print('# epoch: {}'.format(args.epoch))
+print('# window-size: {}'.format(args.window))
+print('# slide-width: {}'.format(args.slide))
 
 def v(x):
     return Variable(np.asarray(x, dtype=np.float32))
@@ -45,11 +68,11 @@ class RNN(Chain):
     def __init__(self):
         super(RNN, self).__init__()
         input_dim = 14
-        hidden_dim = 100
+        hidden_dim = args.unit
         output_dim = 1
 
         with self.init_scope():
-            self.lstm = L.NStepLSTM(n_layers=1, in_size=input_dim,
+            self.lstm = L.NStepLSTM(n_layers=2, in_size=input_dim,
                       out_size=hidden_dim, dropout=0.3)
             self.l1 = L.Linear(hidden_dim, hidden_dim)
             self.l2 = L.Linear(hidden_dim, output_dim)

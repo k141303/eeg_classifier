@@ -34,6 +34,7 @@ def prolong(array,window,slide):
     波形の最後に終了を示すフラグも添付します。
     """
     dataset = []
+    array = [[j/400 - 10 for j in i] for i in array]
     end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
@@ -125,8 +126,10 @@ if __name__ == '__main__':
                 eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
     #x,y = data.get_bp(batch_size = 50)
     #print(x.shape,y.shape)
-    x,y,_,_ = data.get()
+    x,y,test_x,_ = data.get(window = 5,slide = 2)
     print(np.array(x).shape)
     print(np.array(y).shape)
+    print(np.array(test_x).shape)
     #print(y)
-    print(x[0][0])
+    print(x[0])
+    print(x[1])
