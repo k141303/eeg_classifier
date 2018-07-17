@@ -38,7 +38,7 @@ def prolong(array,window,slide):
     end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
-        #pick.append(copy(end))  #終了フラグの結合
+        pick.append(copy(end))  #終了フラグの結合
         dataset.append(pick)
     return dataset
 
@@ -84,6 +84,7 @@ class data:
         """
         #脳波部の抽出
         signal = [list(map(float, i[2:16])) for i in self.number_eeg]
+        #signal = [list(map(float, [i[3]])) for i in self.number_eeg]
 
         #キーストロークの抽出
         key = [int(i[19]) for i in self.number_eeg]
@@ -110,7 +111,7 @@ class data:
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [np.array([0]) if key == '12' else np.array([1]) for i in x]
+                y = [[0] if key == '12' else [1] for i in x]
                 if idx <= 2:
                     train_x.extend(x)
                     train_y.extend(y)

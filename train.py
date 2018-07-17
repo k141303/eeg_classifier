@@ -59,7 +59,7 @@ def main():
         os.makedirs('log/')
 
     # NNモデルを宣言
-    model = MyChain(14,args.unit,2)
+    model = MyChain(1,args.unit,1)
 
     #GPU設定
     if args.gpu != -1:
@@ -81,7 +81,8 @@ def main():
 
     # chainerのoptimizer
     #   最適化のアルゴリズムには Adam を使用
-    optimizer = optimizers.Adam()
+    #optimizer = optimizers.Adam()
+    optimizer = optimizers.RMSprop(lr=0.03)
     #optimizer = optimizers.SGD()
     # modelのパラメータをoptimizerに渡す
     optimizer.setup(model)
@@ -123,18 +124,22 @@ def main():
             loss = forward(x_batch, y_batch, model)
             sum_loss.append(loss.data/args.batchsize)
             optimizer.update(forward, x_batch, y_batch, model)
-            #loss.unchain_backward()
+            loss.unchain_backward()
 
         print(e+1,sum(sum_loss)/len(sum_loss))
 
         #テスト
         act = []
+
         """
         for num,i in enumerate(range(0, len(test_x)-1, args.batchsize)):  #バッジに分割して処理
             test_x_batch = test_x[i:i + args.batchsize]
             test_y_batch = test_y[i:i + args.batchsize]
-            test_t = model.predict(test_x_batch)
-            act.append(F.accuracy(test_t,test_y_batch).data)
+            _test_t = model.predict(test_x_batch)
+            test_t = _test_t.data
+            test_t = np.array([1 - test_t, test_t], dtype='f').T[0]
+            act.append(F.accuracy(test_y_batch.data, test_t).data)
+            test_t = None
         print(e+1,sum(act)/len(act))
         """
 

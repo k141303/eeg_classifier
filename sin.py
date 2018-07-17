@@ -67,7 +67,7 @@ def vi(x):
 class RNN(Chain):
     def __init__(self):
         super(RNN, self).__init__()
-        input_dim = 14
+        input_dim = 1
         hidden_dim = args.unit
         output_dim = 1
 
