@@ -7,6 +7,7 @@ import csv
 import numpy as np
 from collections import defaultdict
 from chainer import Chain, Variable
+import matplotlib.pyplot as plt
 
 #テスト用
 import random
@@ -28,26 +29,82 @@ point = ['AF3_THETA','AF3_ALPHA','AF3_LOW_BETA','AF3_HIGH_BETA',
         'F4_GAMMA','F8_THETA','F8_ALPHA','F8_LOW_BETA','F8_HIGH_BETA',
         'F8_GAMMA','AF4_THETA','AF4_ALPHA','AF4_LOW_BETA','AF4_HIGH_BETA','AF4_GAMMA']
 
-def prolong(array,window,slide):
+def prolong(array,window = 128,slide = 1):
     """
     配列から窓をスライドさせてバッチに変換します。
     波形の最後に終了を示すフラグも添付します。
+    window : 窓の幅
+    slide : スライド数
     """
     dataset = []
-    array = [[j/400 - 10 for j in i] for i in array]
+    #array = [[j/400 - 10 for j in i] for i in array]
+    array = [[j for j in i] for i in array]
     end = [0.0 for i in range(len(array[0]))] #終了フラグ
     for i in range(0,len(array)-window+1,slide):
         pick = copy(array[i:i+window])
-        pick.append(copy(end))  #終了フラグの結合
+        #pick.append(copy(end))  #終了フラグの結合
         dataset.append(pick)
     return dataset
+
+def to_fft(array,rate = 128,band = [8,50]):
+    """
+    配列をフーリエ変換しパワースペクトルに変換します。
+    array : 入力配列
+    rate : サンプリングレート(Hz)
+    band : パワースペクトルの切り出し範囲 Noneとすると切り出さずに返します。
+    """
+    freq = np.linspace(0, rate, len(array)) # 周波数軸
+    t = np.arange(0, len(array)*(1/rate), (1/rate)) # 時間軸
+
+    # 高速フーリエ変換
+    F = [np.fft.fft(_arrayT) for _arrayT in np.array(array).T]
+
+    # 振幅スペクトルを計算
+    Amp = np.array([np.abs(_F) for _F in F]).T
+
+    if band == None:    #切り出し範囲が指定されていない場合
+        return Amp.flatten()
+
+    #帯域切り出し
+    freq = freq[int(len(array)/rate)*8:int(len(array)/rate)*50]
+    Amp = Amp[int(len(array)/rate)*8:int(len(array)/rate)*50]
+
+    # グラフ表示
+    """
+    plt.figure()
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 8
+    plt.subplot(121)
+    for idx,i in enumerate(np.array(array).T):
+        plt.plot(t, i,label = idx)
+    plt.legend(['Data 1','Data 2'])
+    plt.xlabel("Time", fontsize=8)
+    plt.ylabel("Signal", fontsize=8)
+    plt.grid()
+    leg = plt.legend(loc=1, fontsize=8)
+    leg.get_frame().set_alpha(1)
+    plt.subplot(122)
+    for idx,i in enumerate(Amp.T):
+        plt.plot(freq, i,label = idx)
+    plt.legend(['Data 1','Data 2'])
+    plt.xlabel('Frequency', fontsize=8)
+    plt.ylabel('Amplitude', fontsize=8)
+    plt.grid()
+    leg = plt.legend(loc=1, fontsize=8)
+    leg.get_frame().set_alpha(1)
+    plt.show()
+    """
+    return Amp.flatten()
 
 
 class data:
     def __init__(self,eeg,eeg_bp,eeg_pm):
+        #pandas形式(未使用)
         self.eeg = pd.read_csv(eeg)
         self.eeg_bp = pd.read_csv(eeg_bp)
         self.eeg_pm = pd.read_csv(eeg_pm)
+
+        #独自形式
         self.number_eeg,self.header_eeg = self.read_csv(eeg)
 
     def read_csv(self,filepass):
@@ -120,17 +177,25 @@ class data:
                     test_y.extend(y)
         return train_x,train_y,test_x,test_y
 
+    def get_fft(self,window = (128 * 5),slide = 128,band = [5,80]):
+        """
+        データをパワースペクトルで取得します。
+        """
+        #eegデータの取得
+        x,y,test_x,test_y = self.get(window = window,slide = slide)
+        print(np.array(x).shape,np.array(test_x).shape)
+
+        #フーリエ変換しパワースペクトルで取得
+        x = [to_fft(_x ,band = band) for _x in x]
+        test_x = [to_fft(_test_x ,band = band) for _test_x in test_x]
+
+        return x,y,test_x,test_y
+
+
 
 if __name__ == '__main__':
     data = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
                 eeg_bp = 'pilot_project/ishida/math_2018.07.10_16.24.29.bp.csv',
                 eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
-    #x,y = data.get_bp(batch_size = 50)
-    #print(x.shape,y.shape)
-    x,y,test_x,_ = data.get(window = 5,slide = 2)
-    print(np.array(x).shape)
-    print(np.array(y).shape)
-    print(np.array(test_x).shape)
-    #print(y)
-    print(x[0])
-    print(x[1])
+    x,y,test_x,test_y = data.get_fft()
+    print(np.array(x).shape,np.array(y).shape,np.array(test_x).shape,np.array(test_y).shape)
