@@ -17,6 +17,8 @@ from chainer import serializers
 
 from get_eeg import data
 
+import matplotlib.pyplot as plt
+
 # Network definition
 class MLP(chainer.Chain):
 
@@ -26,14 +28,12 @@ class MLP(chainer.Chain):
             # the size of the inputs to each layer will be inferred
             self.l1 = L.Linear(None, n_units)  # n_in -> n_units
             self.l2 = L.Linear(None, n_units)  # n_units -> n_units
-            self.l3 = L.Linear(None, n_units)  # n_units -> n_units
-            self.l4 = L.Linear(None, n_out)  # n_units -> n_out
+            self.l3 = L.Linear(None, n_out)  # n_units -> n_out
 
     def forward(self, x):
         h1 = F.dropout(F.relu(self.l1(x)),  ratio = 0.5)
         h2 = F.dropout(F.relu(self.l2(h1)), ratio = 0.5)
-        h3 = F.dropout(F.relu(self.l3(h2)), ratio = 0.5)
-        return self.l4(h3)
+        return self.l3(h2)
 
 def main():
     parser = argparse.ArgumentParser(description='Chainer example: MNIST')
@@ -56,7 +56,6 @@ def main():
     print('# unit: {}'.format(args.unit))
     print('# Minibatch-size: {}'.format(args.batchsize))
     print('# epoch: {}'.format(args.epoch))
-    print('')
 
     #ディレクトリ作成
     if not os.path.isdir(args.out+'/'):
@@ -73,7 +72,7 @@ def main():
         xp = np
 
     # Setup an optimizer
-    optimizer = chainer.optimizers.Adam()
+    optimizer = chainer.optimizers.SGD()
     optimizer.setup(model)
 
     if args.resume:
@@ -85,14 +84,22 @@ def main():
     eeg = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
                 eeg_bp = 'pilot_project/ishida/math_2018.07.10_16.24.29.bp.csv',
                 eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
-    train_x,train_t,test_x,test_t = eeg.get_fft(window = (128 * 5),slide = 128,band = [5,80])
+    train_x,train_t,test_x,test_t = eeg.get_fft(window = (128 * 5),slide = 128,band = [4,50])
     train_x = [xp.array(_x,dtype=np.float32) for _x in train_x]
     test_x = [xp.array(_x,dtype=np.float32) for _x in test_x]
     train = list(zip(train_x,train_t))
     test = list(zip(test_x,test_t))
 
+    print('# length: {}'.format(train_x[0].shape[0]))
+
     train_count = len(train_x)
     test_count = len(test_x)
+
+    print('# train-size: {}'.format(train_count))
+    print('# test-size: {}'.format(test_count))
+
+    train_log_loss,test_log_loss = [],[]
+    train_log_act,test_log_act = [],[]
 
     with MultiprocessIterator(train, args.batchsize) as train_iter, \
         MultiprocessIterator(test, args.batchsize,
@@ -112,6 +119,8 @@ def main():
                 print('epoch: {}'.format(train_iter.epoch))
                 print('train mean loss: {}, accuracy: {}'.format(
                     sum_loss / train_count, sum_accuracy / train_count))
+                train_log_loss.append(sum_loss / train_count)
+                train_log_act.append(sum_accuracy / train_count)
                 # evaluation
                 sum_accuracy = 0
                 sum_loss = 0
@@ -128,6 +137,8 @@ def main():
                 test_iter.reset()
                 print('test mean  loss: {}, accuracy: {}'.format(
                     sum_loss / test_count, sum_accuracy / test_count))
+                test_log_loss.append(sum_loss / test_count)
+                test_log_act.append(sum_accuracy / test_count)
                 sum_accuracy = 0
                 sum_loss = 0
 
@@ -137,6 +148,23 @@ def main():
         print('save the optimizer')
         serializers.save_npz('{}/mlp.state'.format(args.out), optimizer)
 
+        fig, (axL, axR) = plt.subplots(ncols=2, figsize=(10,4))
+
+        #誤差出力
+        axL.plot(train_log_loss, label = "train")
+        axL.plot(test_log_loss, label = "test")
+        axL.set_title('loss')
+        axL.set_xlabel("epoch")
+        axL.set_ylabel("loss")
+
+        #誤差出力
+        axR.plot(train_log_act, label = "train")
+        axR.plot(test_log_act, label = "test")
+        axL.set_title('accuracy')
+        axR.set_xlabel("epoch")
+        axR.set_ylabel("accuracy")
+
+        fig.savefig("log/log.png")
 
 if __name__ == '__main__':
     main()
