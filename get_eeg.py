@@ -168,7 +168,7 @@ class data:
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [[0] if key == '12' else [1] for i in x]
+                y = [0 if key == '12' else 1 for i in x]
                 if idx <= 2:
                     train_x.extend(x)
                     train_y.extend(y)
@@ -183,7 +183,6 @@ class data:
         """
         #eegデータの取得
         x,y,test_x,test_y = self.get(window = window,slide = slide)
-        print(np.array(x).shape,np.array(test_x).shape)
 
         #フーリエ変換しパワースペクトルで取得
         x = [to_fft(_x ,band = band) for _x in x]
