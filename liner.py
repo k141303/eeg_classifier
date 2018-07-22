@@ -72,7 +72,7 @@ def main():
         xp = np
 
     # Setup an optimizer
-    optimizer = chainer.optimizers.SGD()
+    optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
 
     if args.resume:
@@ -81,9 +81,12 @@ def main():
         serializers.load_npz('{}/mlp.state'.format(args.resume), optimizer)
 
     # Load the EEG dataset
-    eeg = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
+    ishida = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
                 eeg_bp = 'pilot_project/ishida/math_2018.07.10_16.24.29.bp.csv',
                 eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
+    jduned = data(eeg = 'pilot_project/djuned/math_2018.07.10_16.24.29.csv',
+                eeg_bp = 'pilot_project/djuned/math_2018.07.10_16.24.29.bp.csv',
+                eeg_pm = 'pilot_project/djuned/math_2018.07.10_16.24.29.pm.csv')
     train_x,train_t,test_x,test_t = eeg.get_fft(window = (128 * 5),slide = 128,band = [4,50])
     train_x = [xp.array(_x,dtype=np.float32) for _x in train_x]
     test_x = [xp.array(_x,dtype=np.float32) for _x in test_x]
