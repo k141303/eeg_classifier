@@ -32,8 +32,8 @@ class MLP(chainer.Chain):
 
     def forward(self, x):
         #順伝搬
-        h1 = F.dropout(F.relu(self.l1(x)),  ratio = 0.5)
-        h2 = F.dropout(F.relu(self.l2(h1)), ratio = 0.5)
+        h1 = F.dropout(F.relu(self.l1(x)),  ratio = 0)
+        h2 = F.dropout(F.relu(self.l2(h1)), ratio = 0)
         return self.l3(h2)
 
 def main():
@@ -84,10 +84,10 @@ def main():
 
     # EEGをロード
     ishida = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv')
-    ishida_fft = ishida.get_fft(window = (128 * 5),slide = 128*2,band = [3,20])
+    ishida_fft = ishida.get_fft(window = 128,slide = 128,band = None)
 
     djuned = data(eeg = 'pilot_project/djuned/math_2018.07.10_17.01.52.csv')
-    djuned_fft = djuned.get_fft(window = (128 * 5),slide = 128*2,band = [3,20])
+    djuned_fft = djuned.get_fft(window = 128,slide = 128,band = None)
 
     train_x,train_t,test_x,test_t = [_i + _j for _i,_j in zip(ishida_fft,djuned_fft)]
     #train_x,train_t,test_x,test_t = ishida_fft
