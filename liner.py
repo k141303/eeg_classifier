@@ -40,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description='Chainer example: MNIST')
     parser.add_argument('--batchsize', '-b', type=int, default=10,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=20,
+    parser.add_argument('--epoch', '-e', type=int, default=10,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
@@ -49,7 +49,7 @@ def main():
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot using model '
                              'and state files in the specified directory')
-    parser.add_argument('--unit', '-u', type=int, default=1000,
+    parser.add_argument('--unit', '-u', type=int, default=100,
                         help='Number of units')
     args = parser.parse_args()
 
@@ -83,14 +83,25 @@ def main():
         serializers.load_npz('{}/mlp.state'.format(args.resume), optimizer)
 
     # EEGをロード
-    ishida = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv')
-    ishida_fft = ishida.get_fft(window = 128,slide = 128,band = None)
+    """
+    #2チャンネルが測定できなかった影響で精度が出にくいです。
+    kusano_1st = data(eeg = 'pilot_project/kusano/1st/tetris_2018.07.23_15.40.45.csv')
+    kusano_1st_fft = kusano_1st.get_fft(window = (128 * 1),slide = (128 * 1),band = None)
 
-    djuned = data(eeg = 'pilot_project/djuned/math_2018.07.10_17.01.52.csv')
-    djuned_fft = djuned.get_fft(window = 128,slide = 128,band = None)
+    kusano_2nd = data(eeg = 'pilot_project/kusano/2nd/tetris_2018.07.23_16.23.54.csv')
+    kusano_2nd_fft = kusano_2nd.get_fft(window = (128 * 1),slide = (128 * 1),band = None)
 
-    train_x,train_t,test_x,test_t = [_i + _j for _i,_j in zip(ishida_fft,djuned_fft)]
-    #train_x,train_t,test_x,test_t = ishida_fft
+    train_x,train_t,test_x,test_t = [_i + _j for _i,_j in zip(kusano_1st_fft,kusano_2nd_fft)]
+    """
+
+    kunii_1st = data(eeg = 'pilot_project/kunii/1st/tetris_2018.07.23_15.07.37.csv')
+    kunii_1st_fft = kunii_1st.get_fft(window = (128 * 1),slide = (128 * 1),band = None)
+
+    kunii_2nd = data(eeg = 'pilot_project/kunii/2nd/tetris_2018.07.23_16.05.42.csv')
+    kunii_2nd_fft = kunii_2nd.get_fft(window = (128 * 1),slide = (128 * 1),band = None)
+
+    #データを結合
+    train_x,train_t,test_x,test_t = [_i + _j for _i,_j in zip(kunii_1st_fft,kunii_2nd_fft)]
 
     # NN用にデータセットを変換
     train_x = [xp.array(_x,dtype=np.float32) for _x in train_x]
@@ -182,7 +193,7 @@ def main():
         axR.set_xlabel("epoch")
         axR.set_ylabel("accuracy")
         #出力
-        fig.savefig("log/log.png")
+        fig.savefig("{}/log.png".format(args.out))
 
 if __name__ == '__main__':
     main()

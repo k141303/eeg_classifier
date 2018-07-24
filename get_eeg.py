@@ -123,7 +123,7 @@ class data:
         #脳波部をキーストロークから分類
         spl = defaultdict(lambda: [])
         for idx,(i,j) in enumerate(tag):
-            if i == -3 or idx + 1 == len(tag):  #終了
+            if i == -1 or idx + 1 == len(tag):  #終了
                 break
 
             range = int((tag[idx+1][1] - j) * remove)   #前後の除去幅(ノイズ対策)
@@ -135,11 +135,11 @@ class data:
         train_x,train_y = [],[]
         test_x,test_y = [],[]
         for key,item in spl.items():
-            if not key == '12' and not key == '21':
+            if key == '122' or key == '24-1':
                 continue
             for idx,line in enumerate(item):
                 x = prolong(line,window,slide)
-                y = [0 if key == '12' else 1 for i in x]
+                y = [0 if key[:2] == '22' else 1 for i in x]
                 if idx % 2 == 0:
                     train_x.extend(x)
                     train_y.extend(y)
@@ -148,7 +148,7 @@ class data:
                     test_y.extend(y)
         return train_x,train_y,test_x,test_y
 
-    def get_fft(self,window = (128 * 5),slide = 128,band = [5,80]):
+    def get_fft(self,window = (128 * 1),slide = (128*1),band = None):
         """
         データをパワースペクトルで取得します。
         """
@@ -164,6 +164,6 @@ class data:
 
 
 if __name__ == '__main__':
-    data = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv')
+    data = data(eeg = 'pilot_project/kusano/1st/tetris_2018.07.23_15.40.45.csv')
     x,y,test_x,test_y = data.get_fft()
     print(np.array(x).shape,np.array(y).shape,np.array(test_x).shape,np.array(test_y).shape)
