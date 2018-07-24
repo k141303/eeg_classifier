@@ -19,18 +19,19 @@ from get_eeg import data
 
 import matplotlib.pyplot as plt
 
-# Network definition
+# ネットワーク詳細
 class MLP(chainer.Chain):
 
     def __init__(self, n_units, n_out):
         super(MLP, self).__init__()
         with self.init_scope():
-            # the size of the inputs to each layer will be inferred
+            # モデルの設計
             self.l1 = L.Linear(None, n_units)  # n_in -> n_units
             self.l2 = L.Linear(None, n_units)  # n_units -> n_units
             self.l3 = L.Linear(None, n_out)  # n_units -> n_out
 
     def forward(self, x):
+        #順伝搬
         h1 = F.dropout(F.relu(self.l1(x)),  ratio = 0.5)
         h2 = F.dropout(F.relu(self.l2(h1)), ratio = 0.5)
         return self.l3(h2)
@@ -61,37 +62,42 @@ def main():
     if not os.path.isdir(args.out+'/'):
         os.makedirs(args.out+'/')
 
-    # Set up a neural network to train
+    # ニューラルネットを設定
     model = L.Classifier(MLP(args.unit, 2))
     if args.gpu >= 0:
-        # Make a speciied GPU current
+        # GPU向けに配列を変換
         chainer.backends.cuda.get_device_from_id(args.gpu).use()
-        model.to_gpu()  # Copy the model to the GPU
+        model.to_gpu()
         xp = cuda.cupy
     else:
         xp = np
 
-    # Setup an optimizer
-    optimizer = chainer.optimizers.Adam()
+    # オプティマイザーを設定
+    optimizer = chainer.optimizers.AdaGrad()
     optimizer.setup(model)
 
+    # 気にしないでください。
     if args.resume:
         # Resume from a snapshot
         serializers.load_npz('{}/mlp.model'.format(args.resume), model)
         serializers.load_npz('{}/mlp.state'.format(args.resume), optimizer)
 
-    # Load the EEG dataset
-    ishida = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv',
-                eeg_bp = 'pilot_project/ishida/math_2018.07.10_16.24.29.bp.csv',
-                eeg_pm = 'pilot_project/ishida/math_2018.07.10_16.24.29.pm.csv')
-    jduned = data(eeg = 'pilot_project/djuned/math_2018.07.10_16.24.29.csv',
-                eeg_bp = 'pilot_project/djuned/math_2018.07.10_16.24.29.bp.csv',
-                eeg_pm = 'pilot_project/djuned/math_2018.07.10_16.24.29.pm.csv')
-    train_x,train_t,test_x,test_t = eeg.get_fft(window = (128 * 5),slide = 128,band = [4,50])
+    # EEGをロード
+    ishida = data(eeg = 'pilot_project/ishida/math_2018.07.10_16.24.29.csv')
+    ishida_fft = ishida.get_fft(window = (128 * 5),slide = 128*2,band = [3,20])
+
+    djuned = data(eeg = 'pilot_project/djuned/math_2018.07.10_17.01.52.csv')
+    djuned_fft = djuned.get_fft(window = (128 * 5),slide = 128*2,band = [3,20])
+
+    train_x,train_t,test_x,test_t = [_i + _j for _i,_j in zip(ishida_fft,djuned_fft)]
+    #train_x,train_t,test_x,test_t = ishida_fft
+
+    # NN用にデータセットを変換
     train_x = [xp.array(_x,dtype=np.float32) for _x in train_x]
     test_x = [xp.array(_x,dtype=np.float32) for _x in test_x]
     train = list(zip(train_x,train_t))
     test = list(zip(test_x,test_t))
+
 
     print('# length: {}'.format(train_x[0].shape[0]))
 
@@ -110,63 +116,72 @@ def main():
 
         sum_accuracy = 0
         sum_loss = 0
+        sum_batch = 0
 
+        #　エポック数に達するまで学習
         while train_iter.epoch < args.epoch:
             batch = train_iter.next()
             x, t = [xp.array(_batch) for _batch in zip(*batch)]
             optimizer.update(model, x, t)
+            #経過の格納
+            sum_batch += len(t)
             sum_loss += float(model.loss.data) * len(t)
             sum_accuracy += float(model.accuracy.data) * len(t)
 
             if train_iter.is_new_epoch:
+                # 経過の出力と保存
                 print('epoch: {}'.format(train_iter.epoch))
                 print('train mean loss: {}, accuracy: {}'.format(
-                    sum_loss / train_count, sum_accuracy / train_count))
-                train_log_loss.append(sum_loss / train_count)
-                train_log_act.append(sum_accuracy / train_count)
-                # evaluation
+                    sum_loss / sum_batch, sum_accuracy / sum_batch))
+                train_log_loss.append(sum_loss / sum_batch)
+                train_log_act.append(sum_accuracy / sum_batch)
+
+                # テストモード
                 sum_accuracy = 0
                 sum_loss = 0
-                # Enable evaluation mode.
+                sum_batch = 0
                 with configuration.using_config('train', False):
-                    # This is optional but can reduce computational overhead.
+                    # テストモードでの動作を指定
                     with chainer.using_config('enable_backprop', False):
                         for batch in test_iter:
                             x, t = [xp.array(_batch) for _batch in zip(*batch)]
                             loss = model(x, t)
+                            #経過の格納
+                            sum_batch += len(t)
                             sum_loss += float(loss.data) * len(t)
                             sum_accuracy += float(model.accuracy.data) * len(t)
 
                 test_iter.reset()
                 print('test mean  loss: {}, accuracy: {}'.format(
-                    sum_loss / test_count, sum_accuracy / test_count))
-                test_log_loss.append(sum_loss / test_count)
-                test_log_act.append(sum_accuracy / test_count)
+                    sum_loss / sum_batch, sum_accuracy / sum_batch))
+                test_log_loss.append(sum_loss / sum_batch)
+                test_log_act.append(sum_accuracy / sum_batch)
                 sum_accuracy = 0
                 sum_loss = 0
+                sum_batch = 0
 
-        # Save the model and the optimizer
+        # モデルとオプティマイザー設定の保存
         print('save the model')
         serializers.save_npz('{}/mlp.model'.format(args.out), model)
         print('save the optimizer')
         serializers.save_npz('{}/mlp.state'.format(args.out), optimizer)
 
-        fig, (axL, axR) = plt.subplots(ncols=2, figsize=(10,4))
 
-        #誤差出力
+        #logの出力
+        fig, (axL, axR) = plt.subplots(ncols=2, figsize=(10,4))
+        #誤差
         axL.plot(train_log_loss, label = "train")
         axL.plot(test_log_loss, label = "test")
         axL.set_title('loss')
         axL.set_xlabel("epoch")
         axL.set_ylabel("loss")
-
-        #誤差出力
+        #正答率
         axR.plot(train_log_act, label = "train")
         axR.plot(test_log_act, label = "test")
-        axL.set_title('accuracy')
+        axR.set_title('accuracy')
         axR.set_xlabel("epoch")
         axR.set_ylabel("accuracy")
-
+        #出力
         fig.savefig("log/log.png")
 
 if __name__ == '__main__':
