@@ -51,8 +51,8 @@ def to_fft(array,rate = 128,band = [8,50]):
         return Amp.flatten()
 
     #帯域切り出し
-    freq = freq[int(len(array)/rate)*8:int(len(array)/rate)*50]
-    Amp = Amp[int(len(array)/rate)*8:int(len(array)/rate)*50]
+    freq = freq[int(len(array)/rate)*band[0]:int(len(array)/rate)*band[1]]
+    Amp = Amp[int(len(array)/rate)*band[0]:int(len(array)/rate)*band[1]]
 
     # グラフ表示
     """
